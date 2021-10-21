@@ -24,3 +24,9 @@ I am now banned of GLife Extinction and this is my reason for releasing this rep
 Run the express server ( node express.js )
 Just join GLife Extinction and open the NUI DEVTOOLS ( f8 -> nui_devtools )
 And type the script (script.js)
+
+
+## Contact
+Contact me if any help is needed 
+
+https://discord.gg/SBsR7Mkr8w - kitsune#6152
