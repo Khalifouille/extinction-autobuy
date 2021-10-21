@@ -3,6 +3,7 @@
  This allows you to buy items automatically from the market.
 
 ## Installation
+( You need NODEJS ) 
 ```bash
     npm i express axios chalk
     node express.js
