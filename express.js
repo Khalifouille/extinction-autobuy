@@ -1,39 +1,43 @@
 const express = require('express');
-const app = express();
-const fs = require('fs');
-const port = 3000;
 const axios = require('axios');
 const cors = require('cors');
-import('chalk').then(chalk => {
-    app.use(cors());
 
-    process.on('uncaughtException', function (exception) {
-        console.log(exception);
-    });
+const app = express();
+const port = 3000;
 
-    // THIS BASICALLY JUST MAKES A REPLICA OF THE API SO YOU CAN USE IT WITHOUT ANY RATE-LIMITING
-    // LOCATED AT http://localhost:3000/
-    
-    app.get('/api/:item', async (req, res) => {
-        try {
-            console.log(`[${chalk.default.gray("PENDING")}] autobuy requested item : ${req.params.item}`);
+app.use(cors());
+app.use(express.json());
 
-            const response = await axios.get(`https://api.gtaliferp.fr:8443/v1/extinction/marketplace/sell/${req.params.item}`);
+process.on('uncaughtException', function (exception) {
+    console.log("Uncaught Exception:", exception);
+});
 
-            if (!response.data || typeof response.data !== 'object') {
-                throw new Error("Invalid JSON response from API");
+// Proxy vers https://lb-picchat/PicChat
+app.post('/PicChat', async (req, res) => {
+    try {
+        console.log(`[PENDING] PicChat request received:`, req.body);
+
+        const response = await axios.post('https://lb-picchat/PicChat', req.body, {
+            headers: {
+                'sec-ch-ua': '"Chromium";v="103"',
+                'Referer': 'https://cfx-nui-lb-picchat/',
+                'sec-ch-ua-mobile': '?0',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.141 CitizenFX/1.0.0.12600 Safari/537.36',
+                'sec-ch-ua-platform': '"Windows"',
+                'Content-Type': 'application/json; charset=UTF-8'
             }
+        });
 
-            console.log(`[${chalk.default.blue("SUCCESS")}] autobuy sent item : ${req.params.item} (${response.data.length} offers)`);
-            res.json(response.data);
-        } catch (err) {
-            console.log(`[${chalk.default.red("FAILURE")}] autobuy failed on : ${req.params.item}, Error: ${err.message}`);
-            console.log(err.response ? err.response.data : 'No response data');
-            res.status(500).json({ error: "Failed to fetch item", details: err.message });
-        }
-    });
+        // Log la réponse de l'API cible
+        console.log(`[SUCCESS] API response:`, response.data);
 
-    app.listen(port, () => {
-        console.log(`[+] autobuy server is up and running`);
-    });
+        res.json(response.data);
+    } catch (err) {
+        console.error(`[FAILURE] PicChat request failed:`, err.message);
+        res.status(err.response?.status || 500).json({ error: "Request failed", details: err.message });
+    }
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`[+] Proxy server running on http://localhost:${port}/PicChat`);
 });
