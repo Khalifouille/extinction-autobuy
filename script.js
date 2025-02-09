@@ -1,38 +1,17 @@
 var priceArray = [
-    {
-        name: 'weapon_musket',
-        sanitized_name: 'Musket',
-        price: 400000
-    },
-    {
-        name: 'weapon_rpg',
-        sanitized_name: 'RPG',
-        price: 500000
-    },
-    {
-        name: 'deluxo',
-        sanitized_name: 'Deluxo',
-        price: 3000000
-    },
-    {
-        name: 'weapon_hominglauncher',
-        sanitized_name: 'Homing Launcher',
-        price: 600000
-    },
-    {
-        name: '300_mag',
-        sanitized_name: '.300 Magnum',
-        price: 60000
-    },
-    {
-        name: 'kevlar',
-        sanitized_name: 'Kevlar',
-        price: 34000
-    },
+    { name: 'weapon_musket', sanitized_name: 'Musket', price: 400000 },
+    { name: 'weapon_rpg', sanitized_name: 'RPG', price: 500000 },
+    { name: 'deluxo', sanitized_name: 'Deluxo', price: 3000000 },
+    { name: 'weapon_hominglauncher', sanitized_name: 'Homing Launcher', price: 600000 },
+    { name: '300_mag', sanitized_name: '.300 Magnum', price: 60000 },
+    { name: 'kevlar', sanitized_name: 'Kevlar', price: 34000 },
 ];
+
 var alreadyDid = [];
+
 const getId = setInterval(() => {
     var weapon = priceArray[~~(Math.random() * priceArray.length)];
+
     fetch(`http://localhost:3000/api/${weapon.name}`, {
             "headers": {
                 "accept": "application/json, text/plain, */*",
@@ -49,27 +28,50 @@ const getId = setInterval(() => {
             return response.json();
         })
         .then(function(json) {
-            for (value in json) {
+            for (let value in json) {
                 const item = json[value];
                 if (item.price < weapon.price) {
-                    var sanitized_price = item.price.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-                    console.log(weapon.sanitized_name, sanitized_price)
-                    fetch("https://gtalife/gameMenuAuctionEvent", {
-                        "headers": {
-                            "accept": "application/json, text/plain, */*",
-                            "content-type": "application/json;charset=UTF-8",
-                            "sec-ch-ua": "\"Chromium\"",
-                            "sec-ch-ua-mobile": "?0"
-                        },
-                        "referrer": "",
-                        "referrerPolicy": "no-referrer-when-downgrade",
-                        "body": `{\"type\":\"takeOffer\",\"data\":{\"id\":${item.id},\"sell\":true}}`,
-                        "method": "POST",
-                        "mode": "cors"
-                    });
-                    
+                    fetch(`https://api.gtaliferp.fr:8443/v1/extinction/marketplace/sell/${weapon.name}`)
+                        .then(marketResponse => marketResponse.json())
+                        .then(marketData => {
+                            if (marketData.length > 0) {
+                                const marketPrice = marketData[0].price;
+                                if (item.price !== marketPrice) {
+                                    const adjustedPrice = marketPrice - 1;
+                                    console.log(`${weapon.sanitized_name} : Prix ajusté du marché: ${adjustedPrice}`);
+                                    fetch("https://gtalife/gameMenuAuctionEvent", {
+                                        "headers": {
+                                            "accept": "application/json, text/plain, */*",
+                                            "content-type": "application/json;charset=UTF-8",
+                                            "sec-ch-ua": "\"Chromium\"",
+                                            "sec-ch-ua-mobile": "?0"
+                                        },
+                                        "referrer": "",
+                                        "referrerPolicy": "no-referrer-when-downgrade",
+                                        "body": JSON.stringify({
+                                            "type": "createOffer",
+                                            "data": {
+                                                "offer": {
+                                                    "itemId": weapon.name,
+                                                    "itemName": weapon.sanitized_name,
+                                                    "quantity": 1,
+                                                    "price": adjustedPrice
+                                                },
+                                                "sell": true
+                                            }
+                                        }),
+                                        "method": "POST",
+                                        "mode": "cors"
+                                    });
+                                }
+                            }
+                        })
+                        .catch(error => console.error("Erreur lors de la récupération des prix du marché :", error));
                 }
             }
-        });
+        })
+        .catch(error => console.error("Erreur lors de la récupération des objets :", error));
+
 }, 200);
+
 console.log("interval id = ", getId);
