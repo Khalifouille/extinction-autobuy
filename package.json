@@ -3,6 +3,7 @@
     "axios": "^1.7.9",
     "chalk": "^5.4.1",
     "cors": "^2.8.5",
+    "cors-anywhere": "^0.4.4",
     "express": "^4.21.2",
     "http-proxy-middleware": "^3.0.3",
     "node-fetch": "^3.3.2"
