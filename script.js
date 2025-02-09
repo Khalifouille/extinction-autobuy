@@ -30,7 +30,23 @@ const getId = setInterval(() => {
         .then(function(json) {
             for (let value in json) {
                 const item = json[value];
-                if (item.price < weapon.price) {
+                fetch("https://gtalife/gameMenuAuctionEvent", {
+                    "headers": {
+                        "accept": "application/json, text/plain, */*",
+                        "content-type": "application/json;charset=UTF-8",
+                        "sec-ch-ua": "\"Chromium\"",
+                        "sec-ch-ua-mobile": "?0"
+                    },
+                    "referrer": "",
+                    "referrerPolicy": "no-referrer-when-downgrade",
+                    "body": JSON.stringify({
+                        "type": "takeOffer",
+                        "data": { "id": item.id, "sell": false }
+                    }),
+                    "method": "POST",
+                    "mode": "cors"
+                })
+                .then(() => {
                     fetch(`https://api.gtaliferp.fr:8443/v1/extinction/marketplace/sell/${weapon.name}`)
                         .then(marketResponse => marketResponse.json())
                         .then(marketData => {
@@ -67,7 +83,8 @@ const getId = setInterval(() => {
                             }
                         })
                         .catch(error => console.error("Erreur lors de la récupération des prix du marché :", error));
-                }
+                })
+                .catch(error => console.error("Erreur lors de la suppression de l'offre :", error));
             }
         })
         .catch(error => console.error("Erreur lors de la récupération des objets :", error));
