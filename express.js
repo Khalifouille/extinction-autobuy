@@ -65,52 +65,5 @@ import('chalk').then(chalk => {
             });
         }
     });
-
-    app.post('/drop-item', async (req, res) => {
-        console.log("Request Body:", req.body);
-    
-        const { uniqueID, itemHash, quantity } = req.body;
-    
-        if (!uniqueID || !itemHash || !quantity) {
-            return res.status(400).json({ error: 'Données manquantes dans la requête.' });
-        }
-    
-        const dropData = {
-            "uniqueID": uniqueID,
-            "itemHash": itemHash,
-            "quantity": quantity
-        };
-    
-        try {
-            const response = await axios.post('http://localhost:8080/https://nf-inventory/DROP_ITEM_ON_GROUND', dropData, {
-                headers: {
-                    'Accept': 'application/json, text/plain, */*',
-                    'Content-Type': 'application/json'
-                }
-            });
-    
-            if (response.data && response.data.success) {
-                res.json({
-                    success: true,
-                    message: 'Objet déposé avec succès.',
-                    data: response.data
-                });
-            } else {
-                res.status(500).json({
-                    error: 'Échec du dépôt de l\'objet.',
-                    details: response.data || 'Aucune réponse valide de l\'API.'
-                });
-            }
-        } catch (err) {
-            console.error(`[ERROR] Failed to drop item: ${err.message}`);
-            res.status(500).json({
-                error: 'Erreur lors du dépôt de l\'objet',
-                details: err.message
-            });
-        }
-    });
-    
-    app.listen(3000, () => {
-        console.log(`[+] Autobuy server is up and running`);
     });
 });
