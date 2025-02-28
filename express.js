@@ -1,78 +1,69 @@
 const express = require('express');
 const app = express();
-const fs = require('fs');
-const port = 3000;
 const axios = require('axios');
-const proxies = fs.readFileSync('proxies.txt', 'utf-8').replace(/\r/gi, '').split('\n');
-
+const cors = require('cors');
 import('chalk').then(chalk => {
+    app.use(cors());
+    app.use(express.json());
+
     process.on('uncaughtException', function (exception) {
         console.log(exception);
     });
 
-    // THIS BASICALLY JUST MAKES A REPLICA OF THE API SO YOU CAN USE IT WITHOUT ANY RATE-LIMITING
-    // LOCATED AT http://localhost:3000/
-    
-    app.get('/api/:item', async (req, res) => {
+    app.post('/create-offer', async (req, res) => {
+        console.log("Request Body:", req.body); 
+
+        const { itemId, itemName, quantity, price, corsProxy } = req.body;
+
+        if (!itemId || !itemName || !quantity || !price || !corsProxy) {
+            return res.status(400).json({ error: 'Données manquantes dans la requête.' });
+        }
+
+        const offerData = {
+            "type": "createOffer",
+            "data": {
+                "offer": {
+                    "itemId": "kevlar",        
+                    "itemName": "Kevlar",     
+                    "quantity": 8,             
+                    "price": 3887             
+                },
+                "sell": true                  
+            }
+        };
+
         try {
-            console.log(`[${chalk.default.gray("PENDING")}] autobuy requested item : ${req.params.item}`);
-
-            const proxy_server = proxies[~~(Math.random() * proxies.length)];
-            const [ip, port] = proxy_server.split(':');
-
-            const response = await axios.get(`https://api.gtaliferp.fr:8443/v1/extinction/marketplace/sell/${req.params.item}`, {
-                proxy: { host: ip, port: parseInt(port, 10) }
+            const response = await axios.post('http://localhost:8080/https://gtalife/gameMenuAuctionEvent', offerData, {
+                headers: {
+                    'sec-ch-ua': '"Chromium";v="103"',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Referer': '',
+                    'Content-Type': 'application/json',
+                    'sec-ch-ua-mobile': '?0',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.141 CitizenFX/1.0.0.12600 Safari/537.36',
+                    'sec-ch-ua-platform': '"Windows"'
+                }
             });
 
-            console.log(`[${chalk.default.blue("SUCCESS")}] autobuy sent item : ${req.params.item} (${response.data.length} offers)`);
-            res.json(response.data);
+            if (response.data && response.data.success) {
+                res.json({
+                    success: true,
+                    message: 'Offre créée avec succès.',
+                    data: response.data
+                });
+            } else {
+                res.status(500).json({
+                    error: 'Échec de la création de l\'offre.',
+                    details: response.data || 'Aucune réponse valide de l\'API.'
+                });
+            }
         } catch (err) {
-            console.log(`[${chalk.default.red("FAILURE")}] autobuy failed on : ${req.params.item}`);
-            res.status(500).json({ error: "Failed to fetch item" });
+            console.error(`[${chalk.default.red("ERROR")}] Failed to create offer: ${err.message}`);
+            res.status(500).json({
+                error: 'Erreur lors de la création de l\'offre',
+                details: err.message
+            });
         }
     });
-
-    const dropItem = () => {
-        const body = JSON.stringify({
-            uniqueID: "12805",
-            itemHash: "1740170789-339844",
-            quantity: 1
-        });
-    
-        fetch("https://nf-inventory/DROP_ITEM_ON_GROUND", {
-            headers: {
-                "accept": "application/json, text/plain, */*",
-                "content-type": "application/json",
-                "sec-ch-ua": "\"Chromium\";v=\"103\"",
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": "\"Windows\""
-            },
-            referrer: "",
-            referrerPolicy: "strict-origin-when-cross-origin",
-            body: body,
-            method: "POST",
-            mode: "cors",
-            credentials: "omit"
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Item dropped successfully:", data);
-        })
-        .catch(error => {
-            console.error("Error dropping item:", error);
-        });
-    };
-    
-    // Exécuter la fonction à intervalles réguliers
-    const dropInterval = setInterval(dropItem, 2000); // Par exemple, toutes les 2 secondes
-    console.log("Drop item interval ID =", dropInterval);
-
-    app.listen(port, () => {
-        console.log(`[+] autobuy server is up and running`);
     });
 });
